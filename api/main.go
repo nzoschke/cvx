@@ -67,7 +67,7 @@ func Handler() http.Handler {
 			}
 		}
 
-		b, err := json.Marshal(apps)
+		b, err := json.MarshalIndent(apps, "", "  ")
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)

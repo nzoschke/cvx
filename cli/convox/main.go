@@ -67,13 +67,12 @@ func cmdApps(c *cli.Context) {
 		return
 	}
 
-	// switch
-	if c.String("output") == "json" {
+	switch c.String("output") {
+	case "json":
 		fmt.Printf("%s\n", body)
-		return
-	}
-
-	for _, app := range *apps {
-		fmt.Printf("%s\n", app.Name)
+	case "text":
+		for _, app := range *apps {
+			fmt.Printf("%s\n", app.Name)
+		}
 	}
 }

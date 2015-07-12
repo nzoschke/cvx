@@ -80,7 +80,22 @@ GLOBAL OPTIONS:
    
 `
 
-	json := `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]
+	json := `[
+  {
+    "Name": "app1",
+    "Status": "",
+    "Tags": {
+      "Type": "app"
+    }
+  },
+  {
+    "Name": "app2",
+    "Status": "",
+    "Tags": {
+      "Type": "app"
+    }
+  }
+]
 `
 
 	text := `app1
