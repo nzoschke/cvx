@@ -24,6 +24,17 @@ type Case struct {
 
 type Cases []Case
 
+func WriteXML(w http.ResponseWriter, output interface{}) {
+	var b bytes.Buffer
+	enc := xml.NewEncoder(&b)
+	xmlutil.BuildXML(output, enc)
+
+	w.Header().Set("Content-Type", "text/xml")
+	w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
+
+	w.Write([]byte(fmt.Sprintf("<DescribeStacksResponse xmlns=\"http://cloudformation.amazonaws.com/doc/2010-05-15/\"><DescribeStacksResult>%s</DescribeStacksResult><ResponseMetadata><RequestId>b123290e-28ae-11e5-b834-6f3c1afbf01a</RequestId></ResponseMetadata></DescribeStacksResponse>", b.String())))
+}
+
 func TestHttp(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "something failed", http.StatusInternalServerError)
@@ -72,14 +83,7 @@ func TestHttpServer(t *testing.T) {
 			},
 		}
 
-		var b bytes.Buffer
-		enc := xml.NewEncoder(&b)
-		xmlutil.BuildXML(output, enc)
-
-		w.Header().Set("Content-Type", "text/xml")
-		w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
-
-		w.Write([]byte(fmt.Sprintf("<Response xmlns=\"http://cloudformation.amazonaws.com/doc/2010-05-15/\"><DescribeStacksResult>%s</DescribeStacksResult><ResponseMetadata><RequestId>b123290e-28ae-11e5-b834-6f3c1afbf01a</RequestId></ResponseMetadata></Response>", b.String())))
+		WriteXML(w, output)
 	}))
 	defer aws.Close()
 
