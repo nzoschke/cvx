@@ -1,11 +1,23 @@
 package convox
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 
 	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/codegangsta/cli"
+	"github.com/nzoschke/convox/api"
 )
+
+var DefaultConfig = &Config{
+	Endpoint: "",
+}
+
+type Config struct {
+	Endpoint string
+}
 
 func main() {
 	Run()
@@ -25,23 +37,30 @@ func Run() error {
 }
 
 func cmdApps(c *cli.Context) {
-	fmt.Printf("app1\napp2\n")
-	// data, err := ConvoxGet("/apps")
+	res, err := http.Get(DefaultConfig.Endpoint + "/apps")
 
-	// if err != nil {
-	// 	stdcli.Error(err)
-	// 	return
-	// }
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
 
-	// var apps *Apps
-	// err = json.Unmarshal(data, &apps)
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
 
-	// if err != nil {
-	// 	stdcli.Error(err)
-	// 	return
-	// }
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
 
-	// for _, app := range *apps {
-	// 	fmt.Printf("%s\n", app.Name)
-	// }
+	var apps *api.Apps
+	err = json.Unmarshal(body, &apps)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
+
+	for _, app := range *apps {
+		fmt.Printf("%s\n", app.Name)
+	}
 }

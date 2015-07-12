@@ -58,10 +58,12 @@ func TestApps(t *testing.T) {
 	})
 	defer awsServer.Close()
 
-	api := httptest.NewServer(api.Handler())
-	defer api.Close()
+	apiServer := httptest.NewServer(api.Handler())
+	defer apiServer.Close()
 
-	body := Get(t, api.URL+"/apps")
+	convox.DefaultConfig.Endpoint = apiServer.URL
+
+	body := Get(t, apiServer.URL+"/apps")
 
 	help := `NAME:
    convox - A new cli application
