@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
 
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/codegangsta/negroni"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/codegangsta/negroni"
 )
 
 type App struct {

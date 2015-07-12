@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/nzoschke/convox",
+	"ImportPath": "github.com/nzoschke/cvx",
 	"GoVersion": "go1.4.2 darwin/amd64",
 	"Packages": [
 		"./..."

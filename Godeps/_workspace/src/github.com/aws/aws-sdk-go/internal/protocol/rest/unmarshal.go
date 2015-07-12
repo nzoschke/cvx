@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 // Unmarshal unmarshals the REST component of a response in a REST service.

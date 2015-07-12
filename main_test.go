@@ -1,4 +1,4 @@
-package main
+package cvx
 
 import (
 	"bytes"
@@ -13,12 +13,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nzoschke/convox/api"
-	"github.com/nzoschke/convox/cli/convox"
+	"github.com/nzoschke/cvx/api"
+	convox "github.com/nzoschke/cvx/cli/convox"
 
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil"
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
 )
 
 type Case struct {

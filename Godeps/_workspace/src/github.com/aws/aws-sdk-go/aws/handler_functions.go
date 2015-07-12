@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 var sleepDelay = func(delay time.Duration) {

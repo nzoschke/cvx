@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/codegangsta/cli"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/codegangsta/cli"
 )
 
 func ExampleApp() {

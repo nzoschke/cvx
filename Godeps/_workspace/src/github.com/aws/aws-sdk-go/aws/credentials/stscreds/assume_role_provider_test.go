@@ -2,7 +2,7 @@ package stscreds
 
 import (
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

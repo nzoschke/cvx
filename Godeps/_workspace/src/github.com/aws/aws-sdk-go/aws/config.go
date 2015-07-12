@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws/credentials"
 )
 
 // DefaultChainCredentials is a Credentials which will find the first available
