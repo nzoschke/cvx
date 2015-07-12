@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -26,7 +25,7 @@ type Case struct {
 
 type Cases []Case
 
-func TestHttpServer(t *testing.T) {
+func TestApps(t *testing.T) {
 	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
 			{
@@ -56,28 +55,8 @@ func TestHttpServer(t *testing.T) {
 	api := httptest.NewServer(api.Handler())
 	defer api.Close()
 
-	res, err := http.Get(api.URL + "/apps")
-	if err != nil {
-		log.Fatal(err)
-	}
+	body := Get(t, api.URL+"/apps")
 
-	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cases := Cases{
-		{res.StatusCode, 200},
-		{string(body), `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]`},
-		// {string(body), `[{"Name":"s-150531195417","Status":"","Tags":{}},{"Name":"s-150531193549","Status":"","Tags":{}},{"Name":"s-1505311901","Status":"","Tags":{}},{"Name":"s","Status":"","Tags":{}},{"Name":"staging","Status":"","Tags":{}}]`},
-	}
-
-	assert(t, cases)
-}
-
-func TestApps(t *testing.T) {
 	help := `
 usage: convox [--version] [--help] [--app=<name>]
 
@@ -91,6 +70,7 @@ Commands:
 `
 
 	cases := Cases{
+		{body, `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]`},
 		{convox.Run([]string{"apps", "help"}), help},
 		{convox.Run([]string{"apps"}), out},
 	}
@@ -104,6 +84,23 @@ func assert(t *testing.T, cases Cases) {
 			t.Errorf("got `%v` want `%v`", c.got, c.want)
 		}
 	}
+}
+
+func Get(t *testing.T, url string) string {
+	res, err := http.Get(url)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	return string(body)
 }
 
 func NewAwsServer(output interface{}) *httptest.Server {
