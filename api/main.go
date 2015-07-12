@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/nzoschke/convox/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
@@ -30,29 +31,34 @@ func main() {
 	n.Run(":3000")
 }
 
-func TestHandler(awsOutput interface{}) http.Handler {
+func TestHandler(awsEndpoint string) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/apps", func(w http.ResponseWriter, req *http.Request) {
-		// svc := cloudformation.New(&aws.Config{
-		// 	Region: "us-west-2",
-		// })
+		svc := cloudformation.New(&aws.Config{
+			Region:      "us-west-2",
+			Logger:      os.Stdout,
+			LogLevel:    0,
+			LogHTTPBody: true,
+		})
 
-		// fmt.Printf("%+v\n", svc.Endpoint)
+		svc.Endpoint = awsEndpoint
 
-		// res, err := svc.DescribeStacks(&cloudformation.DescribeStacksInput{})
+		res, err := svc.DescribeStacks(&cloudformation.DescribeStacksInput{})
 
-		// if err != nil {
-		// 	http.Error(w, err.Error(), 500)
-		// 	return
-		// }
-		res, ok := awsOutput.(cloudformation.DescribeStacksOutput)
-
-		if !ok {
-			http.Error(w, "error converting to cloudformation.DescribeStacksOutput", 500)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
 			return
 		}
 
+		// res, ok := awsOutput.(cloudformation.DescribeStacksOutput)
+
+		// if !ok {
+		// 	http.Error(w, "error converting to cloudformation.DescribeStacksOutput", 500)
+		// 	return
+		// }
+
+		// fmt.Printf("%+v\n", res.Stacks)
 		apps := make(Apps, 0)
 
 		for _, stack := range res.Stacks {
@@ -62,14 +68,14 @@ func TestHandler(awsOutput interface{}) http.Handler {
 				tags[*tag.Key] = *tag.Value
 			}
 
-			if tags["Type"] == "app" {
-				app := App{
-					Name: *stack.StackName,
-					Tags: tags,
-				}
-
-				apps = append(apps, app)
+			// if tags["Type"] == "app" {
+			app := App{
+				Name: *stack.StackName,
+				Tags: tags,
 			}
+
+			apps = append(apps, app)
+			// }
 		}
 
 		b, err := json.Marshal(apps)
