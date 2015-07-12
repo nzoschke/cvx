@@ -73,6 +73,7 @@ VERSION:
    0.0.0
 
 COMMANDS:
+   apps		
    help, h	Shows a list of commands or help for one command
    
 GLOBAL OPTIONS:
