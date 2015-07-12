@@ -11,8 +11,7 @@ import (
 )
 
 type Case struct {
-	Got  interface{}
-	Want interface{}
+  got, want interface{}
 }
 
 type Cases []Case
@@ -58,14 +57,8 @@ Commands:
 `
 
 	cases := Cases{
-		{
-			Got:  convox.Run([]string{"apps", "help"}),
-			Want: help,
-		},
-		{
-			Got:  convox.Run([]string{"apps"}),
-			Want: out,
-		},
+		{convox.Run([]string{"apps", "help"}), help},
+		{convox.Run([]string{"apps"}), out},
 	}
 
 	assert(t, cases)
@@ -73,14 +66,8 @@ Commands:
 
 func assert(t *testing.T, cases Cases) {
 	for _, c := range cases {
-		if c.Got != c.Want {
-			t.Errorf("got `%v` want `%v`", c.Got, c.Want)
+		if c.got != c.want {
+			t.Errorf("got `%v` want `%v`", c.got, c.want)
 		}
 	}
 }
-
-// func assert(t *testing.T, a string, b string) {
-//   if a != b {
-//     t.Error("got `%q` want `%q`", a, b)
-//   }
-// }
