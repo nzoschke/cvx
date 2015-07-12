@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -61,22 +63,32 @@ func TestApps(t *testing.T) {
 
 	body := Get(t, api.URL+"/apps")
 
-	help := `
-usage: convox [--version] [--help] [--app=<name>]
+	help := `NAME:
+   convox - A new cli application
 
-Commands:
-  apps  List, create, or delete apps
+USAGE:
+   convox [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.0
+
+COMMANDS:
+   help, h	Shows a list of commands or help for one command
+   
+GLOBAL OPTIONS:
+   --help, -h		show help
+   --version, -v	print the version
+   
 `
 
-	out := `
- * app1
-  app2
-`
+	// 	out := `
+	//  * app1
+	//   app2
+	// `
 
 	cases := Cases{
 		{body, `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]`},
 		{Run([]string{"apps", "help"}), Out{help, ""}},
-		{Run([]string{"apps"}), Out{out, ""}},
 	}
 
 	assert(t, cases)
@@ -85,7 +97,7 @@ Commands:
 func assert(t *testing.T, cases Cases) {
 	for _, c := range cases {
 		if c.got != c.want {
-			t.Errorf("got `%v` want `%v`", c.got, c.want)
+			t.Errorf("got `%q` want `%q`", c.got, c.want)
 		}
 	}
 }
@@ -128,7 +140,44 @@ func NewAwsServer(output interface{}) *httptest.Server {
 }
 
 func Run(args []string) Out {
-	out := convox.Run(args)
+	// Capture stdout and stderr to strings via Pipes
+	oldErr := os.Stderr
+	oldOut := os.Stdout
 
-	return Out{out, ""}
+	er, ew, _ := os.Pipe()
+	or, ow, _ := os.Pipe()
+
+	os.Stderr = ew
+	os.Stdout = ow
+
+	errC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, er)
+		errC <- buf.String()
+	}()
+
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, or)
+		outC <- buf.String()
+	}()
+
+	// Run CLI app
+	os.Args = args
+	convox.Run()
+
+	// restore stderr, stdout
+	ew.Close()
+	os.Stderr = oldErr
+	err := <-errC
+
+	ow.Close()
+	os.Stdout = oldOut
+	out := <-outC
+
+	return Out{out, err}
 }
