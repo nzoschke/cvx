@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -43,12 +42,35 @@ func TestHttp(t *testing.T) {
 }
 
 func TestHttpServer(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello, client")
-	}))
+	svcOut := cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
+				StackName: aws.String("app1"),
+				Tags: []*cloudformation.Tag{
+					{
+						Key:   aws.String("Type"),
+						Value: aws.String("app"),
+					},
+				},
+			},
+			{
+				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app2/185779b0-1632-11e5-98be-50d501114c2c"),
+				StackName: aws.String("app2"),
+				Tags: []*cloudformation.Tag{
+					{
+						Key:   aws.String("Type"),
+						Value: aws.String("app"),
+					},
+				},
+			},
+		},
+	}
+
+	ts := httptest.NewServer(api.TestHandler(svcOut))
 	defer ts.Close()
 
-	res, err := http.Get(ts.URL)
+	res, err := http.Get(ts.URL + "/apps")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,7 +84,7 @@ func TestHttpServer(t *testing.T) {
 
 	cases := Cases{
 		{res.StatusCode, 200},
-		{string(greeting), "Hello, client\n"},
+		{string(greeting), `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]`},
 	}
 
 	assert(t, cases)
