@@ -1,4 +1,4 @@
-package cvx
+package main
 
 import (
 	"bytes"

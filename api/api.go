@@ -23,7 +23,7 @@ type App struct {
 
 type Apps []App
 
-func main() {
+func Run() {
 	mux := Handler()
 	n := negroni.Classic()
 	n.UseHandler(mux)
@@ -35,7 +35,7 @@ func Handler() http.Handler {
 
 	mux.HandleFunc("/apps", func(w http.ResponseWriter, req *http.Request) {
 		svc := cloudformation.New(&aws.Config{
-			Region:      "us-west-2",
+			Region:      "us-east-1",
 			Logger:      os.Stdout,
 			LogLevel:    0,
 			LogHTTPBody: true,

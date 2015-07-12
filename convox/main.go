@@ -12,7 +12,7 @@ import (
 )
 
 var DefaultConfig = &Config{
-	Endpoint: "",
+	Endpoint: "http://localhost:3000",
 }
 
 type Config struct {
