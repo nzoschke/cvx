@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -38,4 +38,12 @@ func main() {
 	n := negroni.Classic()
 	n.UseHandler(mux)
 	n.Run(":3000")
+}
+
+func Set(url string, svcOut interface{}) string {
+	// mux := http.NewServeMux()
+	// mux.HandleFunc(url, func(w http.ResponseWriter, req *http.Request) {
+	// })
+	// b, err := json.Marshal(res)
+	return ""
 }
