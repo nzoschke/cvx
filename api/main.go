@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -31,7 +30,7 @@ func main() {
 	n.Run(":3000")
 }
 
-func TestHandler(awsEndpoint string) http.Handler {
+func Handler() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/apps", func(w http.ResponseWriter, req *http.Request) {
@@ -42,8 +41,6 @@ func TestHandler(awsEndpoint string) http.Handler {
 			LogHTTPBody: true,
 		})
 
-		svc.Endpoint = awsEndpoint
-
 		res, err := svc.DescribeStacks(&cloudformation.DescribeStacksInput{})
 
 		if err != nil {
@@ -51,14 +48,6 @@ func TestHandler(awsEndpoint string) http.Handler {
 			return
 		}
 
-		// res, ok := awsOutput.(cloudformation.DescribeStacksOutput)
-
-		// if !ok {
-		// 	http.Error(w, "error converting to cloudformation.DescribeStacksOutput", 500)
-		// 	return
-		// }
-
-		// fmt.Printf("%+v\n", res.Stacks)
 		apps := make(Apps, 0)
 
 		for _, stack := range res.Stacks {
@@ -68,14 +57,14 @@ func TestHandler(awsEndpoint string) http.Handler {
 				tags[*tag.Key] = *tag.Value
 			}
 
-			// if tags["Type"] == "app" {
-			app := App{
-				Name: *stack.StackName,
-				Tags: tags,
-			}
+			if tags["Type"] == "app" {
+				app := App{
+					Name: *stack.StackName,
+					Tags: tags,
+				}
 
-			apps = append(apps, app)
-			// }
+				apps = append(apps, app)
+			}
 		}
 
 		b, err := json.Marshal(apps)
@@ -89,42 +78,4 @@ func TestHandler(awsEndpoint string) http.Handler {
 	})
 
 	return mux
-}
-
-func Handler() http.Handler {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/apps", func(w http.ResponseWriter, req *http.Request) {
-		svc := cloudformation.New(&aws.Config{
-			Region: "us-west-2",
-		})
-
-		fmt.Printf("%+v\n", svc.Endpoint)
-
-		res, err := svc.DescribeStacks(&cloudformation.DescribeStacksInput{})
-
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-
-		b, err := json.Marshal(res)
-
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
-
-		w.Write(b)
-	})
-
-	return mux
-}
-
-func Set(url string, svcOut interface{}) string {
-	// mux := http.NewServeMux()
-	// mux.HandleFunc(url, func(w http.ResponseWriter, req *http.Request) {
-	// })
-	// b, err := json.Marshal(res)
-	return ""
 }
