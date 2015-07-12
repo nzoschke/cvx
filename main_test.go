@@ -82,14 +82,14 @@ GLOBAL OPTIONS:
    
 `
 
-	// 	out := `
-	//  * app1
-	//   app2
-	// `
+	out := `app1
+app2
+`
 
 	cases := Cases{
 		{body, `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]`},
-		{Run([]string{"apps", "help"}), Out{help, ""}},
+		{Run([]string{"convox", "help"}), Out{help, ""}},
+		{Run([]string{"convox", "apps"}), Out{out, ""}},
 	}
 
 	assert(t, cases)
