@@ -23,6 +23,10 @@ type Case struct {
 	got, want interface{}
 }
 
+type Out struct {
+	stdout, stderr string
+}
+
 type Cases []Case
 
 func TestApps(t *testing.T) {
@@ -71,8 +75,8 @@ Commands:
 
 	cases := Cases{
 		{body, `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]`},
-		{convox.Run([]string{"apps", "help"}), help},
-		{convox.Run([]string{"apps"}), out},
+		{Run([]string{"apps", "help"}), Out{help, ""}},
+		{Run([]string{"apps"}), Out{out, ""}},
 	}
 
 	assert(t, cases)
@@ -121,4 +125,10 @@ func NewAwsServer(output interface{}) *httptest.Server {
 	aws.DefaultConfig.Endpoint = s.URL
 
 	return s
+}
+
+func Run(args []string) Out {
+	out := convox.Run(args)
+
+	return Out{out, ""}
 }
