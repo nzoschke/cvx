@@ -14,7 +14,7 @@ import (
 	"testing"
 
 	"github.com/nzoschke/cvx/api"
-	convox "github.com/nzoschke/cvx/cli/convox"
+	convox "github.com/nzoschke/cvx/convox"
 
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil"

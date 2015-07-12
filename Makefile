@@ -1,5 +1,5 @@
 install:
-	go get ./cli/convox
+	go get ./...
 
 test:
 	go test -v ./...
