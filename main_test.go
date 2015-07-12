@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/nzoschke/convox/api"
@@ -24,70 +26,34 @@ type Case struct {
 
 type Cases []Case
 
-func WriteXML(w http.ResponseWriter, output interface{}) {
-	var b bytes.Buffer
-	enc := xml.NewEncoder(&b)
-	xmlutil.BuildXML(output, enc)
-
-	w.Header().Set("Content-Type", "text/xml")
-	w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
-
-	w.Write([]byte(fmt.Sprintf("<DescribeStacksResponse xmlns=\"http://cloudformation.amazonaws.com/doc/2010-05-15/\"><DescribeStacksResult>%s</DescribeStacksResult><ResponseMetadata><RequestId>b123290e-28ae-11e5-b834-6f3c1afbf01a</RequestId></ResponseMetadata></DescribeStacksResponse>", b.String())))
-}
-
-func TestHttp(t *testing.T) {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "something failed", http.StatusInternalServerError)
-	}
-
-	req, err := http.NewRequest("GET", "http://example.com/foo", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	w := httptest.NewRecorder()
-	handler(w, req)
-
-	cases := Cases{
-		{w.Code, 500},
-		{w.Body.String(), "something failed\n"},
-	}
-
-	assert(t, cases)
-}
-
 func TestHttpServer(t *testing.T) {
-	aws := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		output := cloudformation.DescribeStacksOutput{
-			Stacks: []*cloudformation.Stack{
-				{
-					StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
-					StackName: aws.String("app1"),
-					Tags: []*cloudformation.Tag{
-						{
-							Key:   aws.String("Type"),
-							Value: aws.String("app"),
-						},
-					},
-				},
-				{
-					StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app2/185779b0-1632-11e5-98be-50d501114c2c"),
-					StackName: aws.String("app2"),
-					Tags: []*cloudformation.Tag{
-						{
-							Key:   aws.String("Type"),
-							Value: aws.String("app"),
-						},
+	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
+				StackName: aws.String("app1"),
+				Tags: []*cloudformation.Tag{
+					{
+						Key:   aws.String("Type"),
+						Value: aws.String("app"),
 					},
 				},
 			},
-		}
+			{
+				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app2/185779b0-1632-11e5-98be-50d501114c2c"),
+				StackName: aws.String("app2"),
+				Tags: []*cloudformation.Tag{
+					{
+						Key:   aws.String("Type"),
+						Value: aws.String("app"),
+					},
+				},
+			},
+		},
+	})
+	defer awsServer.Close()
 
-		WriteXML(w, output)
-	}))
-	defer aws.Close()
-
-	api := httptest.NewServer(api.TestHandler(aws.URL))
+	api := httptest.NewServer(api.Handler())
 	defer api.Close()
 
 	res, err := http.Get(api.URL + "/apps")
@@ -112,33 +78,6 @@ func TestHttpServer(t *testing.T) {
 }
 
 func TestApps(t *testing.T) {
-	svcOut := cloudformation.DescribeStacksOutput{
-		Stacks: []*cloudformation.Stack{
-			{
-				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
-				StackName: aws.String("app1"),
-				Tags: []*cloudformation.Tag{
-					{
-						Key:   aws.String("Type"),
-						Value: aws.String("app"),
-					},
-				},
-			},
-			{
-				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app2/185779b0-1632-11e5-98be-50d501114c2c"),
-				StackName: aws.String("app2"),
-				Tags: []*cloudformation.Tag{
-					{
-						Key:   aws.String("Type"),
-						Value: aws.String("app"),
-					},
-				},
-			},
-		},
-	}
-
-	api.Set("/apps", svcOut)
-
 	help := `
 usage: convox [--version] [--help] [--app=<name>]
 
@@ -165,4 +104,24 @@ func assert(t *testing.T, cases Cases) {
 			t.Errorf("got `%v` want `%v`", c.got, c.want)
 		}
 	}
+}
+
+func NewAwsServer(output interface{}) *httptest.Server {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var b bytes.Buffer
+		enc := xml.NewEncoder(&b)
+		xmlutil.BuildXML(output, enc)
+
+		t := reflect.TypeOf(output).Name()
+		t = strings.Replace(t, "Output", "", 1)
+
+		w.Header().Set("Content-Type", "text/xml")
+		w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
+
+		w.Write([]byte(fmt.Sprintf("<%sResponse><%sResult>%s</%sResult><ResponseMetadata><RequestId>b123290e-28ae-11e5-b834-6f3c1afbf01a</RequestId></ResponseMetadata></%sResponse>", t, t, b.String(), t, t)))
+	}))
+
+	aws.DefaultConfig.Endpoint = s.URL
+
+	return s
 }
