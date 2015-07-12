@@ -31,6 +31,13 @@ func Run() error {
 		{
 			Name:   "apps",
 			Action: cmdApps,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output",
+					Usage: "output 'text' or 'json'",
+					Value: "text",
+				},
+			},
 		},
 	}
 	return app.Run(os.Args)
@@ -57,6 +64,12 @@ func cmdApps(c *cli.Context) {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
+
+	// switch
+	if c.String("output") == "json" {
+		fmt.Printf("%s\n", body)
 		return
 	}
 

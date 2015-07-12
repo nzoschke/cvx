@@ -58,12 +58,8 @@ func TestApps(t *testing.T) {
 	})
 	defer awsServer.Close()
 
-	apiServer := httptest.NewServer(api.Handler())
+	apiServer := NewApiServer()
 	defer apiServer.Close()
-
-	convox.DefaultConfig.Endpoint = apiServer.URL
-
-	body := Get(t, apiServer.URL+"/apps")
 
 	help := `NAME:
    convox - A new cli application
@@ -84,14 +80,17 @@ GLOBAL OPTIONS:
    
 `
 
-	out := `app1
+	json := `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]
+`
+
+	text := `app1
 app2
 `
 
 	cases := Cases{
-		{body, `[{"Name":"app1","Status":"","Tags":{"Type":"app"}},{"Name":"app2","Status":"","Tags":{"Type":"app"}}]`},
 		{Run([]string{"convox", "help"}), Out{help, ""}},
-		{Run([]string{"convox", "apps"}), Out{out, ""}},
+		{Run([]string{"convox", "apps"}), Out{text, ""}},
+		{Run([]string{"convox", "apps", "--output", "json"}), Out{json, ""}},
 	}
 
 	assert(t, cases)
@@ -138,6 +137,14 @@ func NewAwsServer(output interface{}) *httptest.Server {
 	}))
 
 	aws.DefaultConfig.Endpoint = s.URL
+
+	return s
+}
+
+func NewApiServer() *httptest.Server {
+	s := httptest.NewServer(api.Handler())
+
+	convox.DefaultConfig.Endpoint = s.URL
 
 	return s
 }
