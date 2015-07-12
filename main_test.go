@@ -1,6 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/nzoschke/convox/api"
@@ -11,10 +16,58 @@ import (
 )
 
 type Case struct {
-  got, want interface{}
+	got, want interface{}
 }
 
 type Cases []Case
+
+func TestHttp(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "something failed", http.StatusInternalServerError)
+	}
+
+	req, err := http.NewRequest("GET", "http://example.com/foo", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+	handler(w, req)
+
+	cases := Cases{
+		{w.Code, 500},
+		{w.Body.String(), "something failed\n"},
+	}
+
+	assert(t, cases)
+}
+
+func TestHttpServer(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	greeting, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cases := Cases{
+		{res.StatusCode, 200},
+		{string(greeting), "Hello, client\n"},
+	}
+
+	assert(t, cases)
+
+}
 
 func TestApps(t *testing.T) {
 	svcOut := cloudformation.DescribeStacksOutput{
