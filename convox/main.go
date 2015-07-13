@@ -39,6 +39,17 @@ func Run() error {
 				},
 			},
 		},
+		{
+			Name:   "builds",
+			Action: cmdBuilds,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output",
+					Usage: "output 'text' or 'json'",
+					Value: "text",
+				},
+			},
+		},
 	}
 	return app.Run(os.Args)
 }
@@ -73,6 +84,40 @@ func cmdApps(c *cli.Context) {
 	case "text":
 		for _, app := range *apps {
 			fmt.Printf("%s\n", app.Name)
+		}
+	}
+}
+
+func cmdBuilds(c *cli.Context) {
+	res, err := http.Get(DefaultConfig.Endpoint + "/builds")
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
+
+	var builds *api.Builds
+	err = json.Unmarshal(body, &builds)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
+
+	switch c.String("output") {
+	case "json":
+		fmt.Printf("%s\n", body)
+	case "text":
+		for _, build := range *builds {
+			fmt.Printf("%s\n", build.Id)
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
@@ -22,6 +23,23 @@ type App struct {
 }
 
 type Apps []App
+
+type Build struct {
+	Id string
+
+	App string
+
+	Logs    string
+	Release string
+	Status  string
+
+	Started time.Time
+	Ended   time.Time
+
+	kinesis string
+}
+
+type Builds []Build
 
 func Run() {
 	mux := Handler()
