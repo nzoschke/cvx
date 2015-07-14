@@ -116,6 +116,24 @@ app2
 	assert(t, cases)
 }
 
+func TestBuilds(t *testing.T) {
+	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{})
+	defer awsServer.Close()
+
+	apiServer := NewApiServer()
+	defer apiServer.Close()
+
+	text := `build1
+build2
+`
+
+	cases := Cases{
+		{Run([]string{"convox", "builds"}), text},
+	}
+
+	assert(t, cases)
+}
+
 func TestStacks(t *testing.T) {
 	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{

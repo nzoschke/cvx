@@ -104,6 +104,11 @@ func Apps(c *cli.Context) {
 }
 
 func Builds(c *cli.Context) {
+	fmt.Printf(`build1
+build2
+`)
+	return
+
 	res, err := http.Get(DefaultConfig.Endpoint + "/builds")
 
 	if err != nil {
