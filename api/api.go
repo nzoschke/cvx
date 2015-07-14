@@ -95,5 +95,30 @@ func Handler() http.Handler {
 		w.Write(b)
 	})
 
+	mux.HandleFunc("/stacks", func(w http.ResponseWriter, req *http.Request) {
+		svc := cloudformation.New(&aws.Config{
+			Region:      "us-east-1",
+			Logger:      os.Stdout,
+			LogLevel:    0,
+			LogHTTPBody: true,
+		})
+
+		res, err := svc.DescribeStacks(&cloudformation.DescribeStacksInput{})
+
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		b, err := json.MarshalIndent(res.Stacks, "", "  ")
+
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		w.Write(b)
+	})
+
 	return mux
 }

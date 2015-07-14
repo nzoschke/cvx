@@ -30,7 +30,7 @@ func Run() error {
 	app.Commands = []cli.Command{
 		{
 			Name:   "apps",
-			Action: cmdApps,
+			Action: Apps,
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "output",
@@ -41,7 +41,18 @@ func Run() error {
 		},
 		{
 			Name:   "builds",
-			Action: cmdBuilds,
+			Action: Builds,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output",
+					Usage: "output 'text' or 'json'",
+					Value: "text",
+				},
+			},
+		},
+		{
+			Name:   "stacks",
+			Action: Stacks,
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "output",
@@ -54,7 +65,7 @@ func Run() error {
 	return app.Run(os.Args)
 }
 
-func cmdApps(c *cli.Context) {
+func Apps(c *cli.Context) {
 	res, err := http.Get(DefaultConfig.Endpoint + "/apps")
 
 	if err != nil {
@@ -88,7 +99,7 @@ func cmdApps(c *cli.Context) {
 	}
 }
 
-func cmdBuilds(c *cli.Context) {
+func Builds(c *cli.Context) {
 	res, err := http.Get(DefaultConfig.Endpoint + "/builds")
 
 	if err != nil {
@@ -120,4 +131,23 @@ func cmdBuilds(c *cli.Context) {
 			fmt.Printf("%s\n", build.Id)
 		}
 	}
+}
+
+func Stacks(c *cli.Context) {
+	res, err := http.Get(DefaultConfig.Endpoint + "/stacks")
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		return
+	}
+
+	fmt.Printf("%s\n", body)
 }

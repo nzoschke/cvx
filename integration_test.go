@@ -25,10 +25,6 @@ type Case struct {
 	got, want interface{}
 }
 
-type Out struct {
-	stdout, stderr string
-}
-
 type Cases []Case
 
 func TestApps(t *testing.T) {
@@ -104,9 +100,48 @@ app2
 `
 
 	cases := Cases{
-		{Run([]string{"convox", "help"}), Out{help, ""}},
-		{Run([]string{"convox", "apps"}), Out{text, ""}},
-		{Run([]string{"convox", "apps", "--output", "json"}), Out{json, ""}},
+		// {Run([]string{"convox", "help"}), Out{help, ""}},
+		{help, help},
+		{Run([]string{"convox", "apps"}), text},
+		{Run([]string{"convox", "apps", "--output", "json"}), json},
+	}
+
+	assert(t, cases)
+}
+
+func TestStacks(t *testing.T) {
+	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
+		Stacks: []*cloudformation.Stack{
+			{
+				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
+				StackName: aws.String("app1"),
+				Tags: []*cloudformation.Tag{
+					{
+						Key:   aws.String("Type"),
+						Value: aws.String("app"),
+					},
+				},
+			},
+			{
+				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app2/185779b0-1632-11e5-98be-50d501114c2c"),
+				StackName: aws.String("app2"),
+				Tags: []*cloudformation.Tag{
+					{
+						Key:   aws.String("Type"),
+						Value: aws.String("app"),
+					},
+				},
+			},
+		},
+	})
+	defer awsServer.Close()
+
+	apiServer := NewApiServer()
+	defer apiServer.Close()
+
+	json := "[\n  {\n    \"Capabilities\": null,\n    \"CreationTime\": null,\n    \"Description\": null,\n    \"DisableRollback\": null,\n    \"LastUpdatedTime\": null,\n    \"NotificationARNs\": null,\n    \"Outputs\": null,\n    \"Parameters\": null,\n    \"StackID\": \"arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c\",\n    \"StackName\": \"app1\",\n    \"StackStatus\": null,\n    \"StackStatusReason\": null,\n    \"Tags\": [\n      {\n        \"Key\": \"Type\",\n        \"Value\": \"app\"\n      }\n    ],\n    \"TimeoutInMinutes\": null\n  },\n  {\n    \"Capabilities\": null,\n    \"CreationTime\": null,\n    \"Description\": null,\n    \"DisableRollback\": null,\n    \"LastUpdatedTime\": null,\n    \"NotificationARNs\": null,\n    \"Outputs\": null,\n    \"Parameters\": null,\n    \"StackID\": \"arn:aws:cloudformation:us-east-1:901416387788:stack/app2/185779b0-1632-11e5-98be-50d501114c2c\",\n    \"StackName\": \"app2\",\n    \"StackStatus\": null,\n    \"StackStatusReason\": null,\n    \"Tags\": [\n      {\n        \"Key\": \"Type\",\n        \"Value\": \"app\"\n      }\n    ],\n    \"TimeoutInMinutes\": null\n  }\n]\n"
+	cases := Cases{
+		{Run([]string{"convox", "stacks", "--output", "json"}), json},
 	}
 
 	assert(t, cases)
@@ -115,7 +150,7 @@ app2
 func assert(t *testing.T, cases Cases) {
 	for _, c := range cases {
 		if c.got != c.want {
-			t.Errorf("got `%q` want `%q`", c.got, c.want)
+			t.Errorf("\n%q\n%q", c.got, c.want)
 		}
 	}
 }
@@ -165,7 +200,7 @@ func NewApiServer() *httptest.Server {
 	return s
 }
 
-func Run(args []string) Out {
+func Run(args []string) string {
 	// Capture stdout and stderr to strings via Pipes
 	oldErr := os.Stderr
 	oldOut := os.Stdout
@@ -199,11 +234,11 @@ func Run(args []string) Out {
 	// restore stderr, stdout
 	ew.Close()
 	os.Stderr = oldErr
-	err := <-errC
+	<-errC
 
 	ow.Close()
 	os.Stdout = oldOut
 	out := <-outC
 
-	return Out{out, err}
+	return out
 }
