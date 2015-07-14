@@ -27,6 +27,8 @@ func main() {
 }
 
 func Run() error {
+	aws.DefaultConfig.Region = "us-east-1"
+
 	app := cli.NewApp()
 	app.Name = "convox"
 

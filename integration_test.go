@@ -207,7 +207,6 @@ func Run(args []string) string {
 	os.Stderr = ow
 	os.Stdout = ow
 
-	aws.DefaultConfig.Region = "us-east-1"
 	os.Args = args
 	convox.Run()
 
