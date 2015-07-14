@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/nzoschke/cvx/api"
-	convox "github.com/nzoschke/cvx/convox"
+	"github.com/nzoschke/cvx/cli"
 
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil"
@@ -194,7 +194,7 @@ func NewAwsServer(output interface{}) *httptest.Server {
 func NewApiServer() *httptest.Server {
 	s := httptest.NewServer(api.Handler())
 
-	convox.DefaultConfig.Endpoint = s.URL
+	cli.DefaultConfig.Endpoint = s.URL
 
 	return s
 }
@@ -208,7 +208,7 @@ func Run(args []string) string {
 	os.Stdout = ow
 
 	os.Args = args
-	convox.Run()
+	cli.Run()
 
 	ow.Close()
 	os.Stdout = _out

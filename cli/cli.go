@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"encoding/json"
@@ -20,10 +20,6 @@ var DefaultConfig = &Config{
 
 type Config struct {
 	Endpoint string
-}
-
-func main() {
-	Run()
 }
 
 func Run() error {
