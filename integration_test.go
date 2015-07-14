@@ -26,6 +26,36 @@ type Case struct {
 
 type Cases []Case
 
+func TestCLIHelp(t *testing.T) {
+		help := `NAME:
+   convox - A new cli application
+
+USAGE:
+   convox [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.0
+
+COMMANDS:
+   apps		
+   builds	
+   stacks	
+   help, h	Shows a list of commands or help for one command
+   
+GLOBAL OPTIONS:
+   --help, -h		show help
+   --version, -v	print the version
+   
+`
+
+	cases := Cases{
+		{Run([]string{"convox"}), help},
+		{Run([]string{"convox", "help"}), help},
+	}
+
+	assert(t, cases)
+}
+
 func TestApps(t *testing.T) {
 	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
@@ -56,27 +86,6 @@ func TestApps(t *testing.T) {
 	apiServer := NewApiServer()
 	defer apiServer.Close()
 
-	help := `NAME:
-   convox - A new cli application
-
-USAGE:
-   convox [global options] command [command options] [arguments...]
-
-VERSION:
-   0.0.0
-
-COMMANDS:
-   apps		
-   builds	
-   stacks	
-   help, h	Shows a list of commands or help for one command
-   
-GLOBAL OPTIONS:
-   --help, -h		show help
-   --version, -v	print the version
-   
-`
-
 	json := `[
   {
     "Name": "app1",
@@ -100,7 +109,6 @@ app2
 `
 
 	cases := Cases{
-		{Run([]string{"convox", "help"}), help},
 		{Run([]string{"convox", "apps"}), text},
 		{Run([]string{"convox", "apps", "--output", "json"}), json},
 	}
