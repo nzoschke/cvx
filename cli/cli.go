@@ -104,15 +104,10 @@ func Apps(c *cli.Context) {
 }
 
 func Builds(c *cli.Context) {
-	fmt.Printf(`build1
-build2
-`)
-	return
-
 	res, err := http.Get(DefaultConfig.Endpoint + "/builds")
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		fmt.Fprintf(os.Stderr, "http.Get error: %s\n", err)
 		return
 	}
 
@@ -120,7 +115,7 @@ build2
 	res.Body.Close()
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		fmt.Fprintf(os.Stderr, "ioutil.ReadAll error: %s\n", err)
 		return
 	}
 
@@ -128,7 +123,7 @@ build2
 	err = json.Unmarshal(body, &builds)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+		fmt.Fprintf(os.Stderr, "json.Unmarshal error: %s\n", err)
 		return
 	}
 
@@ -137,7 +132,7 @@ build2
 		fmt.Printf("%s\n", body)
 	case "text":
 		for _, build := range *builds {
-			fmt.Printf("%s\n", build.Id)
+			fmt.Printf("%s %s %s\n", build.App, build.Id, build.Status)
 		}
 	}
 }

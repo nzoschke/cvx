@@ -117,8 +117,10 @@ app2
 }
 
 func TestBuilds(t *testing.T) {
-	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{})
-	defer awsServer.Close()
+	aws.DefaultConfig.Endpoint = ""
+
+	// awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{})
+	// defer awsServer.Close()
 
 	apiServer := NewApiServer()
 	defer apiServer.Close()
@@ -129,6 +131,7 @@ build2
 
 	cases := Cases{
 		{Run([]string{"convox", "builds"}), text},
+		{Run([]string{"convox", "builds", "--output", "json"}), text},
 	}
 
 	assert(t, cases)
