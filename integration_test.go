@@ -68,7 +68,8 @@ VERSION:
 
 COMMANDS:
    apps		
-   builds		
+   builds	
+   stacks	
    help, h	Shows a list of commands or help for one command
    
 GLOBAL OPTIONS:
@@ -100,8 +101,7 @@ app2
 `
 
 	cases := Cases{
-		// {Run([]string{"convox", "help"}), Out{help, ""}},
-		{help, help},
+		{Run([]string{"convox", "help"}), help},
 		{Run([]string{"convox", "apps"}), text},
 		{Run([]string{"convox", "apps", "--output", "json"}), json},
 	}
