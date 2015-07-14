@@ -201,44 +201,24 @@ func NewApiServer() *httptest.Server {
 }
 
 func Run(args []string) string {
-	// Capture stdout and stderr to strings via Pipes
-	oldErr := os.Stderr
-	oldOut := os.Stdout
+	_out := os.Stdout
 
-	er, ew, _ := os.Pipe()
 	or, ow, _ := os.Pipe()
 
-	os.Stderr = ew
 	os.Stdout = ow
 
-	errC := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, er)
-		errC <- buf.String()
-	}()
-
 	outC := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
 		io.Copy(&buf, or)
 		outC <- buf.String()
 	}()
 
-	// Run CLI app
+	aws.DefaultConfig.Region = "us-east-1"
 	os.Args = args
 	convox.Run()
 
-	// restore stderr, stdout
-	ew.Close()
-	os.Stderr = oldErr
-	<-errC
-
 	ow.Close()
-	os.Stdout = oldOut
-	out := <-outC
-
-	return out
+	os.Stdout = _out
+	return <-outC
 }

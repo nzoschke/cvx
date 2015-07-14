@@ -9,6 +9,9 @@ import (
 
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/codegangsta/cli"
 	"github.com/nzoschke/cvx/api"
+
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
 )
 
 var DefaultConfig = &Config{
@@ -134,20 +137,21 @@ func Builds(c *cli.Context) {
 }
 
 func Stacks(c *cli.Context) {
-	res, err := http.Get(DefaultConfig.Endpoint + "/stacks")
+	svc := cloudformation.New(&aws.Config{})
+
+	res, err := svc.DescribeStacks(&cloudformation.DescribeStacksInput{})
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 		return
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
+	b, err := json.MarshalIndent(res.Stacks, "", "  ")
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 		return
 	}
 
-	fmt.Printf("%s\n", body)
+	fmt.Printf("%s\n", b)
 }
