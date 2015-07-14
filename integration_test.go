@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -141,7 +140,7 @@ func TestStacks(t *testing.T) {
 
 	json := "[\n  {\n    \"Capabilities\": null,\n    \"CreationTime\": null,\n    \"Description\": null,\n    \"DisableRollback\": null,\n    \"LastUpdatedTime\": null,\n    \"NotificationARNs\": null,\n    \"Outputs\": null,\n    \"Parameters\": null,\n    \"StackID\": \"arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c\",\n    \"StackName\": \"app1\",\n    \"StackStatus\": null,\n    \"StackStatusReason\": null,\n    \"Tags\": [\n      {\n        \"Key\": \"Type\",\n        \"Value\": \"app\"\n      }\n    ],\n    \"TimeoutInMinutes\": null\n  },\n  {\n    \"Capabilities\": null,\n    \"CreationTime\": null,\n    \"Description\": null,\n    \"DisableRollback\": null,\n    \"LastUpdatedTime\": null,\n    \"NotificationARNs\": null,\n    \"Outputs\": null,\n    \"Parameters\": null,\n    \"StackID\": \"arn:aws:cloudformation:us-east-1:901416387788:stack/app2/185779b0-1632-11e5-98be-50d501114c2c\",\n    \"StackName\": \"app2\",\n    \"StackStatus\": null,\n    \"StackStatusReason\": null,\n    \"Tags\": [\n      {\n        \"Key\": \"Type\",\n        \"Value\": \"app\"\n      }\n    ],\n    \"TimeoutInMinutes\": null\n  }\n]\n"
 	cases := Cases{
-		{Run([]string{"convox", "stacks", "--output", "json"}), json},
+		{Run([]string{"convox", "stacks", "--output", "json", "--verbose"}), json},
 	}
 
 	assert(t, cases)
@@ -205,14 +204,8 @@ func Run(args []string) string {
 
 	or, ow, _ := os.Pipe()
 
+	os.Stderr = ow
 	os.Stdout = ow
-
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, or)
-		outC <- buf.String()
-	}()
 
 	aws.DefaultConfig.Region = "us-east-1"
 	os.Args = args
@@ -220,5 +213,7 @@ func Run(args []string) string {
 
 	ow.Close()
 	os.Stdout = _out
-	return <-outC
+
+	b, _ := ioutil.ReadAll(or)
+	return string(b)
 }

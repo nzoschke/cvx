@@ -62,6 +62,9 @@ func Run() error {
 					Usage: "output 'text' or 'json'",
 					Value: "text",
 				},
+				cli.BoolFlag{
+					Name: "verbose",
+				},
 			},
 		},
 	}
