@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +20,7 @@ import (
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/aws"
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/internal/protocol/xml/xmlutil"
 	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/nzoschke/cvx/Godeps/_workspace/src/github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
 type Case struct {
@@ -27,7 +30,7 @@ type Case struct {
 type Cases []Case
 
 func TestCLIHelp(t *testing.T) {
-		help := `NAME:
+	help := `NAME:
    convox - A new cli application
 
 USAGE:
@@ -57,7 +60,7 @@ GLOBAL OPTIONS:
 }
 
 func TestApps(t *testing.T) {
-	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
+	awsServer := NewAwsXMLServer(cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
 			{
 				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
@@ -119,26 +122,62 @@ app2
 func TestBuilds(t *testing.T) {
 	aws.DefaultConfig.Endpoint = ""
 
-	// awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{})
-	// defer awsServer.Close()
+	awsServer := NewAwsJSONServer(dynamodb.QueryOutput{
+		Count: aws.Long(2),
+		Items: []map[string]*dynamodb.AttributeValue{
+			{
+				"id":     {S: aws.String("BOBSFPGWQBY")},
+				"app":    {S: aws.String("app1")},
+				"status": {S: aws.String("complete")},
+			},
+			{
+				"id":     {S: aws.String("BFEOTKNIURY")},
+				"app":    {S: aws.String("app1")},
+				"status": {S: aws.String("failed")},
+			},
+		},
+	})
+	defer awsServer.Close()
 
 	apiServer := NewApiServer()
 	defer apiServer.Close()
 
-	text := `build1
-build2
+	json := `[
+  {
+    "Id": "BOBSFPGWQBY",
+    "App": "app1",
+    "Logs": "",
+    "Release": "",
+    "Status": "complete",
+    "Started": "0001-01-01T00:00:00Z",
+    "Ended": "0001-01-01T00:00:00Z"
+  },
+  {
+    "Id": "BFEOTKNIURY",
+    "App": "app1",
+    "Logs": "",
+    "Release": "",
+    "Status": "failed",
+    "Started": "0001-01-01T00:00:00Z",
+    "Ended": "0001-01-01T00:00:00Z"
+  }
+]
+`
+
+	text := `app1 BOBSFPGWQBY complete
+app1 BFEOTKNIURY failed
 `
 
 	cases := Cases{
 		{Run([]string{"convox", "builds"}), text},
-		{Run([]string{"convox", "builds", "--output", "json"}), text},
+		{Run([]string{"convox", "builds", "--output", "json"}), json},
 	}
 
 	assert(t, cases)
 }
 
 func TestStacks(t *testing.T) {
-	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
+	awsServer := NewAwsXMLServer(cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
 			{
 				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
@@ -200,7 +239,7 @@ func Get(t *testing.T, url string) string {
 	return string(body)
 }
 
-func NewAwsServer(output interface{}) *httptest.Server {
+func NewAwsXMLServer(output interface{}) *httptest.Server {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var b bytes.Buffer
 		enc := xml.NewEncoder(&b)
@@ -220,6 +259,25 @@ func NewAwsServer(output interface{}) *httptest.Server {
 	return s
 }
 
+func NewAwsJSONServer(output interface{}) *httptest.Server {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := json.Marshal(output)
+
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
+
+		w.Write(b)
+	}))
+
+	aws.DefaultConfig.Endpoint = s.URL
+
+	return s
+}
+
 func NewApiServer() *httptest.Server {
 	s := httptest.NewServer(api.Handler())
 
@@ -229,19 +287,43 @@ func NewApiServer() *httptest.Server {
 }
 
 func Run(args []string) string {
-	_out := os.Stdout
+	// Capture stdout and stderr to strings via Pipes
+	oldErr := os.Stderr
+	oldOut := os.Stdout
 
+	er, ew, _ := os.Pipe()
 	or, ow, _ := os.Pipe()
 
-	os.Stderr = ow
+	os.Stderr = ew
 	os.Stdout = ow
+
+	errC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, er)
+		errC <- buf.String()
+	}()
+
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, or)
+		outC <- buf.String()
+	}()
 
 	os.Args = args
 	cli.Run()
 
-	ow.Close()
-	os.Stdout = _out
+	// restore stderr, stdout
+	ew.Close()
+	os.Stderr = oldErr
+	<-errC
 
-	b, _ := ioutil.ReadAll(or)
-	return string(b)
+	ow.Close()
+	os.Stdout = oldOut
+	out := <-outC
+
+	return string(out)
 }
