@@ -252,7 +252,7 @@ func NewAwsServer(output interface{}) *httptest.Server {
 		service := parts[len(parts)-1]
 
 		switch service {
-		case "dynamodb": // jsonrpc services
+		case "dynamodb", "ecs": // jsonrpc services
 			b, err := json.Marshal(output)
 
 			if err != nil {
