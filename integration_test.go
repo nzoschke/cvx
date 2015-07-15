@@ -60,7 +60,7 @@ GLOBAL OPTIONS:
 }
 
 func TestApps(t *testing.T) {
-	awsServer := NewAwsXMLServer(cloudformation.DescribeStacksOutput{
+	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
 			{
 				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
@@ -122,7 +122,7 @@ app2
 func TestBuilds(t *testing.T) {
 	aws.DefaultConfig.Endpoint = ""
 
-	awsServer := NewAwsJSONServer(dynamodb.QueryOutput{
+	awsServer := NewAwsServer(dynamodb.QueryOutput{
 		Count: aws.Long(2),
 		Items: []map[string]*dynamodb.AttributeValue{
 			{
@@ -177,7 +177,7 @@ app1 BFEOTKNIURY failed
 }
 
 func TestStacks(t *testing.T) {
-	awsServer := NewAwsXMLServer(cloudformation.DescribeStacksOutput{
+	awsServer := NewAwsServer(cloudformation.DescribeStacksOutput{
 		Stacks: []*cloudformation.Stack{
 			{
 				StackID:   aws.String("arn:aws:cloudformation:us-east-1:901416387788:stack/app1/a9196ca0-24e3-11e5-a58b-500150b34c7c"),
@@ -239,38 +239,39 @@ func Get(t *testing.T, url string) string {
 	return string(body)
 }
 
-func NewAwsXMLServer(output interface{}) *httptest.Server {
+func NewAwsServer(output interface{}) *httptest.Server {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var b bytes.Buffer
 		enc := xml.NewEncoder(&b)
 		xmlutil.BuildXML(output, enc)
 
-		t := reflect.TypeOf(output).Name()
-		t = strings.Replace(t, "Output", "", 1)
+		t := reflect.TypeOf(output)
 
-		w.Header().Set("Content-Type", "text/xml")
-		w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
+		p := t.PkgPath()
+		parts := strings.Split(p, "/")
+		service := parts[len(parts)-1]
 
-		w.Write([]byte(fmt.Sprintf("<%sResponse><%sResult>%s</%sResult><ResponseMetadata><RequestId>b123290e-28ae-11e5-b834-6f3c1afbf01a</RequestId></ResponseMetadata></%sResponse>", t, t, b.String(), t, t)))
-	}))
+		switch service {
+		case "dynamodb": // jsonrpc services
+			b, err := json.Marshal(output)
 
-	aws.DefaultConfig.Endpoint = s.URL
+			if err != nil {
+				fmt.Println("error:", err)
+			}
 
-	return s
-}
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("X-Amzn-Requestid", "24b57e1a-8Bcb-4655-aea5-d00864d514ac")
 
-func NewAwsJSONServer(output interface{}) *httptest.Server {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, err := json.Marshal(output)
+			w.Write(b)
+		case "cloudformation": // XML services
+			n := t.Name()
+			n = strings.Replace(n, "Output", "", 1)
 
-		if err != nil {
-			fmt.Println("error:", err)
+			w.Header().Set("Content-Type", "text/xml")
+			w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
+
+			w.Write([]byte(fmt.Sprintf("<%sResponse><%sResult>%s</%sResult><ResponseMetadata><RequestId>b123290e-28ae-11e5-b834-6f3c1afbf01a</RequestId></ResponseMetadata></%sResponse>", n, n, b.String(), n, n)))
 		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("X-Amzn-Requestid", "b123290e-28ae-11e5-b834-6f3c1afbf01a")
-
-		w.Write(b)
 	}))
 
 	aws.DefaultConfig.Endpoint = s.URL
