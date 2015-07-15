@@ -70,7 +70,7 @@ func Handler() http.Handler {
 			return
 		}
 
-		apps := make(Apps, len(res.Stacks))
+		apps := make(Apps, 0)
 
 		for _, stack := range res.Stacks {
 			tags := make(map[string]string)
@@ -125,7 +125,7 @@ func Handler() http.Handler {
 			return
 		}
 
-		builds := make(Builds, len(res.Items))
+		builds := make(Builds, 0)
 
 		for _, item := range res.Items {
 			started, _ := time.Parse(SortableTime, coalesce(item["created"], ""))
